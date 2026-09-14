@@ -24,3 +24,24 @@ jobs:
           curl http://localhost:5000/health
           docker stop test-app
           docker rm test-app
+
+      - name: Escaneo de seguridad con Snyk
+        uses: snyk/actions/docker@master
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          image: devops-project
+          args: --severity-threshold=high
+        continue-on-error: true
+
+      - name: Generar SBOM con CycloneDX
+        run: |
+          pip install cyclonedx-bom
+          cyclonedx-py requirements app/requirements.txt -o sbom.xml
+          cat sbom.xml
+
+      - name: Subir SBOM como artefacto
+        uses: actions/upload-artifact@v3
+        with:
+          name: sbom
+          path: sbom.xml
