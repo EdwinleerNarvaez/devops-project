@@ -39,6 +39,14 @@ jobs:
           args: --severity-threshold=high
         continue-on-error: true
 
+      - name: Escaneo de seguridad con Trivy
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: devops-project
+          format: table
+          severity: CRITICAL,HIGH
+        continue-on-error: true
+
       - name: Generar SBOM con CycloneDX
         run: |
           pip install cyclonedx-bom
