@@ -58,3 +58,23 @@ jobs:
         with:
           name: sbom
           path: sbom.xml
+
+      - name: Deploy a EC2
+        if: github.ref == 'refs/heads/main'
+        env:
+          EC2_HOST: 54.208.17.145
+          EC2_SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
+        run: |
+          mkdir -p ~/.ssh
+          echo "$EC2_SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/deploy_key ubuntu@$EC2_HOST '
+            sudo docker stop devops-app || true
+            sudo docker rm devops-app || true
+          '
+          scp -o StrictHostKeyChecking=no -i ~/.ssh/deploy_key -r ./app ./Dockerfile ubuntu@$EC2_HOST:~/devops-project/
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/deploy_key ubuntu@$EC2_HOST '
+            cd ~/devops-project
+            sudo docker build -t devops-project .
+            sudo docker run -d -p 5000:5000 --name devops-app devops-project
+          '
